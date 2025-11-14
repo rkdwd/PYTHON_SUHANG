@@ -16,7 +16,7 @@ for pkg in required:
 
 
 
-WINDOW_W, WINDOW_H = 960, 540
+WINDOW_W, WINDOW_H = 960, 540 # 게임 창 크기
 FPS = 60
 TILE = 24
 RAND_MIN, RAND_MAX = 1, 5
@@ -70,8 +70,6 @@ player_front_black = pygame.image.load("src/player_front_black.png")
 player_left_black = pygame.image.load("src/player_left_black.png")
 player_right_black = pygame.image.load("src/player_right_black.png")
 
-abcde = 0
-
 class GameState:
     def __init__(self):
         self.day = 0
@@ -85,46 +83,31 @@ class GameState:
 gs = GameState()
 
 class Entity:
-    def __init__(self, x, y, size, color):
+    def __init__(self, x, y, size):
         self.x = x
         self.y = y
         self.size = size
-        self.color = color
         self.speed = 140
 
     def rect(self):
         return pygame.Rect(int(self.x), int(self.y), self.size, self.size)
 
-    def draw(self, surf):
-        pygame.draw.rect(surf, self.color, self.rect())
 
 
 
-def draw_cat(surf, x, y, size, color, flip=False, sleeping=False):
+def draw_cat(surf, x, y, size, flip=False, sleeping=False):
     if sleeping and cat_sleeping_image:
         image_to_use = cat_sleeping_image
     elif cat_image_original:
         image_to_use = cat_image_original
-    else:
-        image_to_use = None
     
-    if image_to_use:
-        scaled_cat = pygame.transform.scale(image_to_use, (size, size))
-        if flip:
-            scaled_cat = pygame.transform.flip(scaled_cat, True, False)
-        surf.blit(scaled_cat, (x, y))
-    else:
-        body = pygame.Rect(x, y, size, size)
-        pygame.draw.rect(surf, color, body)
-        eye_w = size//6
-        pygame.draw.rect(surf, WHITE, (x+size//4, y+size//4, eye_w, eye_w))
-        pygame.draw.rect(surf, WHITE, (x+size*3//5, y+size//4, eye_w, eye_w))
-        pygame.draw.rect(surf, (30,30,30), (x+size//4+1, y+size//4+1, eye_w-2, eye_w-2))
-        pygame.draw.rect(surf, (30,30,30), (x+size*3//5+1, y+size//4+1, eye_w-2, eye_w-2))
+    scaled_cat = pygame.transform.scale(image_to_use, (size, size))
+    if flip:
+        scaled_cat = pygame.transform.flip(scaled_cat, True, False)
+    surf.blit(scaled_cat, (x, y))
 
-def draw_player(surf, x, y, size, color, direction='front', use_white=True):
+def draw_player(surf, x, y, size, direction='front', use_white=True):
     image = None
-    
     if use_white:
         if direction == 'front':
             image = player_front_white
@@ -139,17 +122,8 @@ def draw_player(surf, x, y, size, color, direction='front', use_white=True):
             image = player_left_black
         elif direction == 'right':
             image = player_right_black
-    
-    if image:
-        scaled_player = pygame.transform.scale(image, (size, size))
-        surf.blit(scaled_player, (int(x), int(y)))
-    else:
-        pygame.draw.rect(surf, color, (int(x), int(y), size, size))
-        pygame.draw.rect(surf, (255,255,255), (int(x)+size//4, int(y)+size//3, size//2, size//6))
-
-def draw_pixel_player(surf, x, y, size, color):
-    pygame.draw.rect(surf, color, (x,y,size,size))
-    pygame.draw.rect(surf, (255,255,255), (x+size//4, y+size//3, size//2, size//6))
+    scaled_player = pygame.transform.scale(image, (size, size))
+    surf.blit(scaled_player, (int(x), int(y)))
 
 def draw_text_center(surf, text, y, font=BIG_FONT, color=WHITE):
     r = font.render(text, True, color)
@@ -167,12 +141,11 @@ def draw_timer_bar(elapsed, total):
 def title_screen():
     screen.fill((20,20,20))
     draw_text_center(screen, "고영희 키우기", 80)
-    draw_cat(screen, WINDOW_W//2 - 32, 160, 64, (200,160,200))
+    draw_cat(screen, WINDOW_W//2 - 32, 160, 64)
     draw_text_center(screen, "게임 시작 (스페이스 또는 마우스 클릭)", 360, font=FONT)
 
 def narration_screen():
     waiting = True
-
     while waiting:
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
@@ -202,8 +175,9 @@ def narration_screen():
 def ending_screen():
     screen.fill(DAY_BG_COLORS[6])
     draw_text_center(screen, DAY_NARRATIVES[6], 60)
-    draw_cat(screen, WINDOW_W//2 - 32, 110, 64, (200,160,200))
+    draw_cat(screen, WINDOW_W//2 - 32, 110, 64)
     draw_text_center(screen, "회복한 감정들:", 220, font=FONT)
+
     y = 260
     for i, e in enumerate(gs.emotions):
         draw_text_center(screen, f"{i+1}. {e}", y+30*i, font=FONT)
@@ -246,6 +220,7 @@ def run_mission(day, mission_func):
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
                 pygame.quit(); sys.exit()
+
         if result:
             screen.fill((20,20,20))
             draw_text_center(screen, "미션 성공!", WINDOW_H//2 - 40)
@@ -261,8 +236,8 @@ def run_mission(day, mission_func):
 
 # ---------- Day1: 술래잡기 ----------
 def mission_day1():
-    player = Entity(WINDOW_W//2 - PLAYER_SIZE//2, WINDOW_H - PLAYER_SIZE - 40, PLAYER_SIZE, (180,180,255))
-    cat = Entity(random.randint(40, WINDOW_W-40-CAT_SIZE), random.randint(100, WINDOW_H-160), CAT_SIZE, (200,160,200))
+    player = Entity(WINDOW_W//2 - PLAYER_SIZE//2, WINDOW_H - PLAYER_SIZE - 40, PLAYER_SIZE)
+    cat = Entity(random.randint(40, WINDOW_W-40-CAT_SIZE), random.randint(100, WINDOW_H-160), CAT_SIZE)
     cat.speed = 160
     total_time = 30.0
     start = time.time()
@@ -332,16 +307,16 @@ def mission_day1():
         if player.rect().colliderect(cat.rect()):
             screen.fill(DAY_BG_COLORS[1])
             draw_timer_bar(elapsed, total_time)
-            draw_player(screen, int(player.x), int(player.y), player.size, player.color, player_direction, use_white=True)
-            draw_cat(screen, int(cat.x), int(cat.y), cat.size, cat.color, flip=cat_facing_left, sleeping=True)
+            draw_player(screen, int(player.x), int(player.y), player.size, player_direction, use_white=True)
+            draw_cat(screen, int(cat.x), int(cat.y), cat.size, flip=cat_facing_left, sleeping=True)
             draw_text(screen, f"남은시간: {max(0, int(total_time - elapsed))}초", 20, 45)
             pygame.display.flip()
             time.sleep(1)
             return True
 
         draw_timer_bar(elapsed, total_time)
-        draw_player(screen, int(player.x), int(player.y), player.size, player.color, player_direction, use_white=True)
-        draw_cat(screen, int(cat.x), int(cat.y), cat.size, cat.color, flip=cat_facing_left)
+        draw_player(screen, int(player.x), int(player.y), player.size, player_direction, use_white=True)
+        draw_cat(screen, int(cat.x), int(cat.y), cat.size, flip=cat_facing_left)
         draw_text(screen, f"남은시간: {max(0, int(total_time - elapsed))}초", 20, 45)
         pygame.display.flip()
 
@@ -350,8 +325,8 @@ def mission_day1():
 
 # ---------- Day2: 방탈출 ----------
 def mission_day2():
-    player = Entity(40, WINDOW_H - PLAYER_SIZE - 40, PLAYER_SIZE, (180,180,255))
-    cat = Entity(WINDOW_W//2 - CAT_SIZE//2, WINDOW_H//2 - CAT_SIZE//2, CAT_SIZE, (200,160,200))
+    player = Entity(40, WINDOW_H - PLAYER_SIZE - 40, PLAYER_SIZE)
+    cat = Entity(WINDOW_W//2 - CAT_SIZE//2, WINDOW_H//2 - CAT_SIZE//2, CAT_SIZE)
     total_time = 30.0
     start = time.time()
     sound_score = 0
@@ -391,8 +366,7 @@ def mission_day2():
             player.y += (move_y / norm) * player.speed * dt
 
         if moving:
-            delta = random.randint(RAND_MIN, RAND_MAX)
-            sound_score += delta
+            sound_score += random.randint(RAND_MIN, RAND_MAX)
         else:
             sound_score -= 1
         sound_score = max(0, sound_score)
@@ -401,8 +375,8 @@ def mission_day2():
             screen.fill(DAY_BG_COLORS[2])
             pygame.draw.rect(screen, (80,50,20), door_rect)
             draw_text(screen, "Door", door_rect.x+6, door_rect.y+door_rect.height+4)
-            draw_cat(screen, int(cat.x), int(cat.y), cat.size, cat.color, sleeping=False)
-            draw_player(screen, int(player.x), int(player.y), player.size, player.color, player_direction, use_white=True)
+            draw_cat(screen, int(cat.x), int(cat.y), cat.size, sleeping=False)
+            draw_player(screen, int(player.x), int(player.y), player.size, player_direction, use_white=True)
             draw_timer_bar(elapsed, total_time)
             draw_text(screen, f"소리 점수: {sound_score}", 20, 45)
             draw_text(screen, f"남은시간: {max(0, int(total_time - elapsed))}초", 20, 65)
@@ -420,8 +394,8 @@ def mission_day2():
         screen.fill(DAY_BG_COLORS[2])
         pygame.draw.rect(screen, (80,50,20), door_rect)
         draw_text(screen, "Door", door_rect.x+6, door_rect.y+door_rect.height+4)
-        draw_cat(screen, int(cat.x), int(cat.y), cat.size, cat.color, sleeping=True)
-        draw_player(screen, int(player.x), int(player.y), player.size, player.color, player_direction, use_white=True)
+        draw_cat(screen, int(cat.x), int(cat.y), cat.size, sleeping=True)
+        draw_player(screen, int(player.x), int(player.y), player.size, player_direction, use_white=True)
 
         draw_timer_bar(elapsed, total_time)
         draw_text(screen, f"소리 점수: {sound_score}", 20, 45)
@@ -536,10 +510,10 @@ def mission_day3():
                         pygame.draw.rect(screen, (220,220,240), rect)
             
             gx, gy = goal
-            draw_cat(screen, offset_x + gx*TILE + (TILE - CAT_SIZE)//2, offset_y + gy*TILE + (TILE - CAT_SIZE)//2, CAT_SIZE, (200,160,200), sleeping=False)
+            draw_cat(screen, offset_x + gx*TILE + (TILE - CAT_SIZE)//2, offset_y + gy*TILE + (TILE - CAT_SIZE)//2, CAT_SIZE, sleeping=False)
             
             px, py = player_cell
-            draw_player(screen, offset_x + px*TILE + (TILE - PLAYER_SIZE)//2, offset_y + py*TILE + (TILE - PLAYER_SIZE)//2, PLAYER_SIZE, player_color, player_direction, use_white=False)
+            draw_player(screen, offset_x + px*TILE + (TILE - PLAYER_SIZE)//2, offset_y + py*TILE + (TILE - PLAYER_SIZE)//2, PLAYER_SIZE, player_direction, use_white=False)
             
             draw_timer_bar(elapsed, total_time)
             draw_text(screen, f"남은시간: {max(0, int(total_time - elapsed))}초", 20, 45)
@@ -557,10 +531,10 @@ def mission_day3():
                     pygame.draw.rect(screen, (220,220,240), rect)
         
         gx, gy = goal
-        draw_cat(screen, offset_x + gx*TILE + (TILE - CAT_SIZE)//2, offset_y + gy*TILE + (TILE - CAT_SIZE)//2, CAT_SIZE, (200,160,200), sleeping=True)
+        draw_cat(screen, offset_x + gx*TILE + (TILE - CAT_SIZE)//2, offset_y + gy*TILE + (TILE - CAT_SIZE)//2, CAT_SIZE, sleeping=True)
         
         px, py = player_cell
-        draw_player(screen, offset_x + px*TILE + (TILE - PLAYER_SIZE)//2, offset_y + py*TILE + (TILE - PLAYER_SIZE)//2, PLAYER_SIZE, player_color, player_direction, use_white=False)
+        draw_player(screen, offset_x + px*TILE + (TILE - PLAYER_SIZE)//2, offset_y + py*TILE + (TILE - PLAYER_SIZE)//2, PLAYER_SIZE, player_direction, use_white=False)
 
         draw_timer_bar(elapsed, total_time)
         draw_text(screen, f"남은시간: {max(0, int(total_time - elapsed))}초", 20, 45)
@@ -571,8 +545,8 @@ def mission_day3():
 
 # ---------- Day4: 피하기 ----------
 def mission_day4():
-    player = Entity(random.randint(40, WINDOW_W-40-PLAYER_SIZE), random.randint(120, WINDOW_H-120-PLAYER_SIZE), PLAYER_SIZE, (180,180,255))
-    cat = Entity(random.randint(40, WINDOW_W-40-CAT_SIZE), random.randint(120, WINDOW_H-120-CAT_SIZE), CAT_SIZE, (200,160,200))
+    player = Entity(random.randint(40, WINDOW_W-40-PLAYER_SIZE), random.randint(120, WINDOW_H-120-PLAYER_SIZE), PLAYER_SIZE)
+    cat = Entity(random.randint(40, WINDOW_W-40-CAT_SIZE), random.randint(120, WINDOW_H-120-CAT_SIZE), CAT_SIZE)
     cat.speed = 200
     total_time = 20.0
     start = time.time()
@@ -605,7 +579,6 @@ def mission_day4():
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
             move_y = 1
         
-        # 아무 키도 안 눌렀으면 front
         if not (keys[pygame.K_LEFT] or keys[pygame.K_a] or keys[pygame.K_RIGHT] or keys[pygame.K_d]):
             if move_y == 0:
                 player_direction = 'front'
@@ -669,8 +642,8 @@ def mission_day4():
             return False
 
         screen.fill(DAY_BG_COLORS[4])
-        draw_player(screen, int(player.x), int(player.y), player.size, player.color, player_direction, use_white=False)
-        draw_cat(screen, int(cat.x), int(cat.y), cat.size, cat.color, flip=cat_facing_left)
+        draw_player(screen, int(player.x), int(player.y), player.size, player_direction, use_white=False)
+        draw_cat(screen, int(cat.x), int(cat.y), cat.size, flip=cat_facing_left)
         for ob in obstacles:
             pygame.draw.rect(screen, (120,50,50), (int(ob['x']), int(ob['y']), ob['w'], ob['h']))
 
@@ -743,7 +716,7 @@ def mission_day5():
                 return False
 
         screen.fill(DAY_BG_COLORS[5])
-        draw_cat(screen, cat_x, cat_y, CAT_SIZE, (200,160,200), sleeping=True)
+        draw_cat(screen, cat_x, cat_y, CAT_SIZE, sleeping=True)
 
         for ob in obstacles:
             color = (150,150,150) if ob['type']=='dust' else (220,180,40) if ob['type']=='fly' else (120,200,240)
@@ -823,10 +796,4 @@ def main_loop():
             title_screen()
             pygame.display.flip()
 
-if __name__ == "__main__":
-    try:
-        main_loop()
-    except Exception as e:
-        print("오류 발생:", e)
-    finally:
-        pygame.quit()
+main_loop()
