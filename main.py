@@ -70,7 +70,7 @@ player_front_black = pygame.image.load("src/player_front_black.png")
 player_left_black = pygame.image.load("src/player_left_black.png")
 player_right_black = pygame.image.load("src/player_right_black.png")
 
-
+abcde = 0
 
 class GameState:
     def __init__(self):
