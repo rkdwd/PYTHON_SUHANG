@@ -18,7 +18,7 @@ for pkg in ["pygame", "numpy"]:
 # --------------- 게임 세팅 ---------------
 pygame.init()
 
-WINDOW_W, WINDOW_H = 960, 540 # 게임 창 크기
+WINDOW_W, WINDOW_H = 960, 540
 FPS = 60
 TILE = 24 # 미로 타일 크기
 RAND_MIN, RAND_MAX = 1, 5
@@ -26,6 +26,8 @@ RAND_MIN, RAND_MAX = 1, 5
 WHITE = (255,255,255)
 BLACK = (0,0,0)
 DOOR = (80,50,20)
+MAZE_ROAD = (220,220,240)
+MAZE_WALL = (50,50,50)
 DUST = (150,150,150)
 FLY = (220,180,40)
 WIND = (120,200,240)
@@ -34,13 +36,13 @@ PLAYER_SIZE = 28
 CAT_SIZE = 28
 
 BG_COLORS = {
-    0: (20, 20, 20),    # 어두운 배경
-    1: (90, 20, 20),    # 크림슨
-    2: (60, 10, 60),    # 보라
-    3: (15, 30, 80),    # 남색
-    4: (240, 220, 140), # 파스텔톤 노랑
-    5: (255, 200, 150), # 파스텔톤 주황
-    6: (255, 164, 164)  # 연붉은 핑크
+    0: (20, 20, 20),
+    1: (90, 20, 20),
+    2: (60, 10, 60),
+    3: (15, 30, 80),
+    4: (240, 220, 140),
+    5: (255, 200, 150),
+    6: (255, 164, 164)
 }
 NARRATIVES = {
     1: "Day1 — 고영희가 날뛴다! 저걸 좀 잡아야겠어.",
@@ -72,20 +74,17 @@ player_front_black = pygame.image.load("src/player_front_black.png")
 player_left_black = pygame.image.load("src/player_left_black.png")
 player_right_black = pygame.image.load("src/player_right_black.png")
 
-class GameState: # 게임 전체 상태 관리
+class GameState:
     def __init__(self):
         self.day = 0
         self.emotions = []
-        self.running = True
-        self.in_mission = False
         self.total_time = 30.0
-        self.mission_result = None
         self.show_title = True
         self.show_narration = False
         self.show_end = False
 gs = GameState()
 
-class Entity: # 플레이어, 고양이 상태(위치, 크기)
+class Entity:
     def __init__(self, x, y, size):
         self.x = x
         self.y = y
@@ -127,67 +126,27 @@ def draw_text(surf, text, x, y, color=WHITE):
     surf.blit(FONT.render(text, True, color), (x,y))
 
 def draw_timer_bar(elapsed, total):
-    w = int((1 - elapsed/total) * (WINDOW_W - 40))                  # 남은 시간 비율
-    pygame.draw.rect(screen, (40,40,40), (20, 20, WINDOW_W-40, 16)) # 바 기본 배경
-    pygame.draw.rect(screen, (80,200,120), (20, 20, w, 16))         # 바 남은 시간 배경
+    pygame.draw.rect(screen, (40,40,40), (20, 20, WINDOW_W-40, 16))
+    pygame.draw.rect(screen, (80,200,120), (20, 20, int((1 - elapsed/total) * (WINDOW_W - 40)), 16))
 
 
 
-# --------------- 화면 함수 ---------------
-def title_screen():
-    screen.fill(BG_COLORS[0])
-    draw_text_center(screen, "고영희 키우기", 80)
-    draw_cat(screen, WINDOW_W//2 - 32, 160, 64)
-    draw_text_center(screen, "게임 시작 (스페이스 또는 마우스 클릭)", 360)
-
-def narration_screen():
-    waiting = True
-    while waiting:
-        for ev in pygame.event.get():
-            if ev.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if ev.type == pygame.KEYDOWN:
-                if ev.key == pygame.K_ESCAPE:
-                    pygame.quit()
-                    sys.exit()
-                if ev.key == pygame.K_SPACE or ev.key == pygame.K_RETURN:
-                    waiting = False
-            if ev.type == pygame.MOUSEBUTTONDOWN:
-                waiting = False
-
-        screen.fill(BG_COLORS[0])
-        draw_text_center(screen, "인생이 재미없다고 느끼면서 살아가는 주인공", 150)
-        draw_text_center(screen, "고양이 한마리를 키우게 되는데...", 180)
-        draw_text_center(screen, "그 이름은 고영희..!", 210)
-        draw_text_center(screen, "5일동안 고영희가 일으키는 이벤트들에 대한 미션을 해결하고,", 270)
-        draw_text_center(screen, "감정을 회복해보자!", 300)
-        draw_text_center(screen, "계속하려면 스페이스 또는 마우스 클릭", WINDOW_H - 60)
-        pygame.display.flip()
-        clock.tick(FPS)
-
-def ending_screen():
-    screen.fill(BG_COLORS[6])
-    draw_text_center(screen, NARRATIVES[6], 60, BLACK)
-    draw_cat(screen, WINDOW_W//2 - 32, 110, 64)
-    draw_text_center(screen, "회복한 감정들:", 220, BLACK)
-    y = 260
-    for i, e in enumerate(gs.emotions):
-        draw_text_center(screen, f"{i+1}. {e}", y+30*i, BLACK)
-    draw_text_center(screen, "게임 종료 (ESC)", WINDOW_H - 60, BLACK)
-
+# --------------- 미션 함수 ---------------
 def game_quit():
     for ev in pygame.event.get():
-        if ev.type == pygame.QUIT:
-            pygame.quit(); sys.exit()
-        if ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE:
+        if ev.type == pygame.QUIT or ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE:
             pygame.quit(); sys.exit()
 
+        if gs.show_title:
+            if ev.type == pygame.MOUSEBUTTONDOWN or ev.type == pygame.KEYDOWN and ev.key == pygame.K_SPACE:
+                gs.show_title = False; gs.show_narration = True
+        elif gs.show_narration:
+            if ev.type == pygame.MOUSEBUTTONDOWN or ev.type == pygame.KEYDOWN and ev.key == pygame.K_SPACE:
+                gs.show_narration = False
+
+
 def run_mission(day, mission_func):
-    gs.in_mission = True
-    gs.mission_result = None
     start_time = time.time()
-    narrated = False
 
     while True:
         game_quit()
@@ -198,13 +157,10 @@ def run_mission(day, mission_func):
         draw_text_center(screen, "미션 시작...", 140, color=BLACK if day == 4 or day == 5 else WHITE)
         draw_text(screen, "조작: 방향키/WASD 또는 마우스(특정 미션)", 20, WINDOW_H-40, color=BLACK if day == 4 or day == 5 else WHITE)
         pygame.display.flip()
-        if time.time() - start_time > 2: narrated = True
-        if narrated: break
+        if time.time() - start_time > 2: break
 
     result = mission_func()
 
-    gs.in_mission = False
-    gs.mission_result = 'success' if result else 'fail'
     if result: gs.emotions.append(EMOTIONS[day])
     end_show_start = time.time()
     while time.time() - end_show_start < 2:
@@ -246,7 +202,7 @@ def mission_day1():
         if keys[pygame.K_UP] or keys[pygame.K_w]: move_y = -1
         if keys[pygame.K_DOWN] or keys[pygame.K_s]: move_y = 1
         if not (keys[pygame.K_LEFT] or keys[pygame.K_a]) and not(keys[pygame.K_RIGHT] or keys[pygame.K_d]) and move_y == 0: player_direction = 'front'
-        if move_x != 0 or move_y != 0: # 대각선으로 움직여도 속도 일정하도록 함
+        if move_x != 0 or move_y != 0:
             norm = math.hypot(move_x, move_y)
             player.x += (move_x / norm) * player.speed * dt
             player.y += (move_y / norm) * player.speed * dt
@@ -254,10 +210,10 @@ def mission_day1():
         player.y = max(80, min(WINDOW_H - player.size - 10, player.y))
 
         if time.time() - last_change > change_interval:
-            cat_dir = [random.choice([-1,0,1]), random.choice([-1,0,1])] # 9방향 중 한가지 선택
+            cat_dir = [random.choice([-1,0,1]), random.choice([-1,0,1])]
             change_interval = random.randint(RAND_MIN, RAND_MAX) / 10.0 + 0.3
             last_change = time.time()
-        if cat_dir[0] != 0 or cat_dir[1] != 0: # 고양이 대각선 이동
+        if cat_dir[0] != 0 or cat_dir[1] != 0:
             normc = math.hypot(cat_dir[0], cat_dir[1])
             cat.x += (cat_dir[0] / normc) * cat.speed * dt
             cat.y += (cat_dir[1] / normc) * cat.speed * dt
@@ -371,19 +327,22 @@ def generate_maze(cols, rows):
         # 2칸 떨어진 위치 탐색 (벽 사이에 통로 만들기)
         for dx,dy in [(2,0),(-2,0),(0,2),(0,-2)]:
             nx, ny = x+dx, y+dy
-            if 0 < nx < cols and 0 < ny < rows and maze[ny, nx] == 1:
-                neighbors.append((nx,ny))
+            if 0 < nx < cols and 0 < ny < rows and maze[ny, nx] == 1: neighbors.append((nx,ny))
         if neighbors:
             nx,ny = random.choice(neighbors)
             bx, by = (x+nx)//2, (y+ny)//2 # 중간 벽 제거
             maze[by, bx] = 0
             maze[ny, nx] = 0
             stack.append((nx,ny))
-        else:
-            stack.pop() # 막다른 곳이면 백트래킹
+        else: stack.pop() # 막다른 곳이면 백트래킹
     return maze
 
 def mission_day3():
+    cols = (WINDOW_W // TILE) | 1
+    rows = ((WINDOW_H - 120) // TILE) | 1
+    maze = generate_maze(cols, rows)
+    start = (1,1)
+
     def farthest_cell():
         visited = set()
         q = deque()
@@ -405,10 +364,6 @@ def mission_day3():
                     q.append(((nx,ny), d+1))
         return far
 
-    cols = (WINDOW_W // TILE) | 1
-    rows = ((WINDOW_H - 120) // TILE) | 1
-    maze = generate_maze(cols, rows)
-    start = (1,1)
     goal_x, goal_y = farthest_cell()
     grid_w = cols * TILE
     grid_h = rows * TILE
@@ -426,7 +381,7 @@ def mission_day3():
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
             nx = player_x-1; ny = player_y
-            if nx>=0 and maze[ny,nx]==0: player_x = nx; player_direction = 'left' # 통로인지 확인 후 이동
+            if nx>=0 and maze[ny,nx]==0: player_x = nx; player_direction = 'left'
         if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
             nx = player_x+1; ny = player_y
             if nx<cols and maze[ny,nx]==0: player_x = nx; player_direction = 'right'
@@ -442,8 +397,8 @@ def mission_day3():
             for y in range(rows):
                 for x in range(cols):
                     rect = pygame.Rect(offset_x + x*TILE, offset_y + y*TILE, TILE, TILE)
-                    if maze[y,x] == 1: pygame.draw.rect(screen, (20,20,20), rect)
-                    else: pygame.draw.rect(screen, (220,220,240), rect)
+                    if maze[y,x] == 1: pygame.draw.rect(screen, MAZE_WALL, rect)
+                    else: pygame.draw.rect(screen, MAZE_ROAD, rect)
             draw_cat(screen, offset_x + goal_x*TILE + (TILE - CAT_SIZE)//2, offset_y + goal_y*TILE + (TILE - CAT_SIZE)//2, CAT_SIZE, sleeping=False)
             draw_player(screen, offset_x + player_x*TILE + (TILE - PLAYER_SIZE)//2, offset_y + player_y*TILE + (TILE - PLAYER_SIZE)//2, PLAYER_SIZE, player_direction, use_white=False)
             draw_timer_bar(elapsed, gs.total_time)
@@ -508,10 +463,8 @@ def mission_day4():
             normc = math.hypot(cat_dir[0], cat_dir[1])
             cat.x += (cat_dir[0] / normc) * cat.speed * dt
             cat.y += (cat_dir[1] / normc) * cat.speed * dt
-            if cat_dir[0] < 0:
-                cat_facing_left = True
-            elif cat_dir[0] > 0:
-                cat_facing_left = False
+            if cat_dir[0] < 0: cat_facing_left = True
+            elif cat_dir[0] > 0: cat_facing_left = False
         if cat.x < 10: cat.x = 10; cat_dir[0] *= -1
         if cat.x > WINDOW_W-cat.size-10: cat.x = WINDOW_W-cat.size-10; cat_dir[0] *= -1
         if cat.y < 80: cat.y = 80; cat_dir[1] *= -1
@@ -585,12 +538,10 @@ def mission_day5():
 
         mx, my = pygame.mouse.get_pos()
         for ob in obstacles[:]: # 복사본으로 순회
-            if math.hypot(ob['x'] - mx, ob['y'] - my) <= ob['r'] + 4:
-                obstacles.remove(ob)
+            if math.hypot(ob['x'] - mx, ob['y'] - my) <= ob['r'] + 4: obstacles.remove(ob)
         cx, cy = cat_x + CAT_SIZE/2, cat_y + CAT_SIZE/2
         for ob in obstacles:
-            if math.hypot(ob['x'] - cx, ob['y'] - cy) <= ob['r'] + CAT_SIZE/2 - 4:
-                return False
+            if math.hypot(ob['x'] - cx, ob['y'] - cy) <= ob['r'] + CAT_SIZE/2 - 4: return False
         screen.fill(BG_COLORS[5])
         draw_cat(screen, cat_x, cat_y, CAT_SIZE, sleeping=True)
         for ob in obstacles:
@@ -605,35 +556,58 @@ def mission_day5():
 
 
 
+# --------------- 화면 함수 ---------------
+def title_screen():
+    while gs.show_title:
+        game_quit()
+
+        screen.fill(BG_COLORS[0])
+        draw_text_center(screen, "고영희 키우기", 80)
+        draw_cat(screen, WINDOW_W//2 - 32, 160, 64)
+        draw_text_center(screen, "게임 시작 (스페이스 또는 마우스 클릭)", 360)
+        pygame.display.flip()
+        clock.tick(FPS)
+
+def narration_screen():
+    while gs.show_narration:
+        game_quit()
+
+        screen.fill(BG_COLORS[0])
+        draw_text_center(screen, "인생이 재미없다고 느끼면서 살아가는 주인공", 150)
+        draw_text_center(screen, "고양이 한마리를 키우게 되는데...", 180)
+        draw_text_center(screen, "그 이름은 고영희..!", 210)
+        draw_text_center(screen, "5일동안 고영희가 일으키는 이벤트들에 대한 미션을 해결하고,", 270)
+        draw_text_center(screen, "감정을 회복해보자!", 300)
+        draw_text_center(screen, "계속하려면 스페이스 또는 마우스 클릭", WINDOW_H - 60)
+        pygame.display.flip()
+        clock.tick(FPS)
+
+def ending_screen():
+    while gs.show_end:
+        game_quit()
+
+        screen.fill(BG_COLORS[6])
+        draw_text_center(screen, NARRATIVES[6], 60, BLACK)
+        draw_cat(screen, WINDOW_W//2 - 32, 110, 64)
+        draw_text_center(screen, "회복한 감정들:", 220, BLACK)
+        y = 260
+        for i, e in enumerate(gs.emotions):
+            draw_text_center(screen, f"{i+1}. {e}", y+30*i, BLACK)
+        draw_text_center(screen, "게임 종료 (ESC)", WINDOW_H - 60, BLACK)
+        pygame.display.flip()
+
+
+
 # --------------- 메인 함수 ---------------
 def main_loop():
-    while gs.running:
-        clock.tick(FPS)
-        for ev in pygame.event.get():
-            if ev.type == pygame.QUIT:
-                gs.running = False
-            if ev.type == pygame.KEYDOWN:
-                if ev.key == pygame.K_SPACE or ev.key == pygame.K_RETURN:
-                    if gs.show_title:
-                        gs.show_title = False
-                        gs.show_narration = True
-                if ev.key == pygame.K_ESCAPE:
-                    gs.running = False
-            if ev.type == pygame.MOUSEBUTTONDOWN:
-                if gs.show_title:
-                    gs.show_title = False
-                    gs.show_narration = True
+    while True:
+        game_quit()
 
-        if gs.show_title:
-            title_screen()
-            pygame.display.flip()
-            continue
-        if gs.show_narration:
-            narration_screen()
-            gs.show_narration = False
-            gs.day = 1
-            continue
-        if 1 <= gs.day <= 5:
+        clock.tick(FPS)
+            
+        if gs.show_title: title_screen()
+        elif gs.show_narration: narration_screen(); gs.day = 1
+        elif 1 <= gs.day <= 5:
             screen.fill(BG_COLORS.get(gs.day, (30,30,30)))
             draw_text_center(screen, f"Day {gs.day}", 40)
             draw_text(screen, f"미션: {NARRATIVES[gs.day]}", 20, 80)
@@ -646,10 +620,7 @@ def main_loop():
             else: ok = False
             if ok: gs.day += 1
             if gs.day > 5: gs.show_end = True
-        elif gs.show_end:
-            ending_screen()
-            pygame.display.flip()
-            game_quit()
+        elif gs.show_end: ending_screen()
 
 
 
