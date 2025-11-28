@@ -1,6 +1,12 @@
-import pygame
 import sys
 import subprocess
+# --------------- 패키지 설치 ---------------
+for pkg in ["pygame", "numpy", "requests"]:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
+
+
+
+import pygame
 import random
 import time
 import math
@@ -8,11 +14,6 @@ import numpy as np
 from collections import deque
 import requests
 from io import BytesIO
-
-
-# --------------- 패키지 설치 ---------------
-for pkg in ["pygame", "numpy", "requests"]:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
 
 
 
