@@ -6,11 +6,12 @@ import time
 import math
 import numpy as np
 from collections import deque
-
+import requests
+from io import BytesIO
 
 
 # --------------- 패키지 설치 ---------------
-for pkg in ["pygame", "numpy"]:
+for pkg in ["pygame", "numpy", "requests"]:
     subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
 
 
@@ -62,20 +63,12 @@ EMOTIONS = {
     4: "이해",
     5: "감동",
 }
-FONT = pygame.font.Font("font/bdf/DOSSaemmul-16.bdf", 20)
+FONT = pygame.font.SysFont("malgungothic", 12)
 
 pygame.display.set_caption("고영희 키우기")
 screen = pygame.display.set_mode((WINDOW_W, WINDOW_H))
 clock = pygame.time.Clock()
 dt = clock.tick(FPS) / 1000.0
-cat_image = pygame.image.load("src/cat.png")
-cat_sleeping_image = pygame.image.load("src/cat_sleeping.png")
-player_front_white = pygame.image.load("src/player_front_white.png")
-player_left_white = pygame.image.load("src/player_left_white.png")
-player_right_white = pygame.image.load("src/player_right_white.png")
-player_front_black = pygame.image.load("src/player_front_black.png")
-player_left_black = pygame.image.load("src/player_left_black.png")
-player_right_black = pygame.image.load("src/player_right_black.png")
 
 class GameState:
     def __init__(self):
@@ -100,6 +93,18 @@ class Entity:
 
 
 # --------------- 그리기 함수 ---------------
+def load_image(image_url):
+    response = requests.get(image_url)
+    return BytesIO(response.content)
+cat_image = pygame.image.load(load_image("https://raw.githubusercontent.com/rkdwd/PYTHON_SUHANG/master/src/cat.png"))
+cat_sleeping_image = pygame.image.load(load_image("https://raw.githubusercontent.com/rkdwd/PYTHON_SUHANG/master/src/cat_sleeping.png"))
+player_front_white = pygame.image.load(load_image("https://raw.githubusercontent.com/rkdwd/PYTHON_SUHANG/master/src/player_front_white.png"))
+player_left_white = pygame.image.load(load_image("https://raw.githubusercontent.com/rkdwd/PYTHON_SUHANG/master/src/player_left_white.png"))
+player_right_white = pygame.image.load(load_image("https://raw.githubusercontent.com/rkdwd/PYTHON_SUHANG/master/src/player_right_white.png"))
+player_front_black = pygame.image.load(load_image("https://raw.githubusercontent.com/rkdwd/PYTHON_SUHANG/master/src/player_front_black.png"))
+player_left_black = pygame.image.load(load_image("https://raw.githubusercontent.com/rkdwd/PYTHON_SUHANG/master/src/player_left_black.png"))
+player_right_black = pygame.image.load(load_image("https://raw.githubusercontent.com/rkdwd/PYTHON_SUHANG/master/src/player_right_black.png"))
+
 def draw_cat(surf, x, y, size, flip=False, sleeping=False):
     if sleeping: image_to_use = cat_sleeping_image
     else: image_to_use = cat_image
